@@ -166,7 +166,7 @@ API
 •	DELETE /budgets/:id 
 •	Logic: 
 o	Tự động tính spentAmount từ transactions 
-o	Trigger cảnh báo khi vượt limit 
+o	Gửi email cảnh báo khi vượt limit 
 ________________________________________
 Database
 budgets

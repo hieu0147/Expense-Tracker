@@ -96,3 +96,31 @@ export const sendOtpMail = async ({
     html
   });
 };
+
+export const sendBudgetWarningMail = async (to: string, name: string, categoryName: string, spentAmount: number, budgetAmount: number) => {
+  const currentYear = new Date().getFullYear();
+  const html = `
+    <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
+      <div style="max-width: 500px; margin: auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+        <h2 style="text-align: center; color: #dc3545; margin-bottom: 20px;">Cảnh báo vượt ngân sách!</h2>
+        <p style="font-size: 16px; color: #555; margin-bottom: 10px;">Xin chào ${name},</p>
+        <p style="font-size: 16px; color: #555; margin-bottom: 20px;">Hệ thống thông báo bạn đã chi tiêu vượt mức phân bổ ngân sách cho danh mục <strong>${categoryName}</strong>.</p>
+        <div style="text-align: center; margin: 30px 0; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
+          <p style="font-size: 14px; color: #666; margin-bottom: 10px;">Thực chi / Ngân sách:</p>
+          <span style="font-size: 24px; color: #dc3545; font-weight: bold;">${spentAmount.toLocaleString('vi-VN')}đ / ${budgetAmount.toLocaleString('vi-VN')}đ</span>
+        </div>
+        <p style="font-size: 14px; color: #555;">Vui lòng cân đối lại chi tiêu để đảm bảo kế hoạch tài chính của bạn.</p>
+        <hr style="margin: 25px 0; border: none; border-top: 1px solid #eee;" />
+        <div style="text-align: center;">
+          <p style="font-size: 12px; color: #999; margin: 0;">&copy; ${currentYear} Expense Tracker. All rights reserved.</p>
+        </div>
+      </div>
+    </div>
+  `;
+  await transporter.sendMail({
+    from: `"Expense Tracker" <${EMAIL_USER}>`,
+    to,
+    subject: `Cảnh báo vượt ngân sách: ${categoryName}`,
+    html
+  });
+};
