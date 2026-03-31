@@ -206,8 +206,7 @@ ________________________________________
 2.6 Thông báo & cảnh báo
 Mô tả
 Thông báo khi:
-•	vượt ngân sách 
-•	nhận email cảnh báo
+•	vượt ngân sách
 ________________________________________
 Backend (BE)
 •	Gửi email cảnh báo khi vượt budget 
