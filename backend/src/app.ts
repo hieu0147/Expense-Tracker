@@ -5,6 +5,7 @@ import { errorHandler } from './middlewares/error.middleware';
 import authRoutes from './routers/auth.route';
 import userRoutes from './routers/user.route';
 import categoryRoutes from './routers/category.route';
+import transactionRoutes from './routers/transaction.route';
 
 const app: Express = express();
 
@@ -24,7 +25,7 @@ app.get('/health', (req: Request, res: Response) => {
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/categories', categoryRoutes);
-// app.use('/api/transactions', transactionRoutes);
+app.use('/transactions', transactionRoutes);
 // app.use('/api/budgets', budgetRoutes);
 // app.use('/api/reports', reportRoutes);
 
