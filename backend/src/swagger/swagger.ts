@@ -1,5 +1,5 @@
 import swaggerJsdoc from 'swagger-jsdoc';
-
+import path from 'path';
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
@@ -29,8 +29,10 @@ const swaggerOptions = {
       },
     ],
   },
-  // Chỉnh lại đường dẫn quét docs theo cấu trúc routers và swagger/schemas
-  apis: ['./src/routers/*.ts', './src/swagger/schemas/*.ts'],
+  apis: [
+    path.join(__dirname, '../routers/*.{ts,js}'),
+    path.join(__dirname, './schemas/*.{ts,js}')
+  ],
 };
 
-export const swaggerSpec = swaggerJsdoc(swaggerOptions);
+export const swaggerSpec = swaggerJsdoc(swaggerOptions); 

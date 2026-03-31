@@ -2,6 +2,8 @@ import express, { Express, Request, Response } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger/swagger';
 import { errorHandler } from './middlewares/error.middleware';
+import authRoutes from './routers/auth.route';
+import userRoutes from './routers/user.route';
 
 const app: Express = express();
 
@@ -18,8 +20,8 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // TODO: Import and use routers
-// app.use('/api/auth', authRoutes);
-// app.use('/api/users', userRoutes);
+app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
 // app.use('/api/categories', categoryRoutes);
 // app.use('/api/transactions', transactionRoutes);
 // app.use('/api/budgets', budgetRoutes);

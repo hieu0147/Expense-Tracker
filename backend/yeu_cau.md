@@ -72,9 +72,8 @@ users
 •	role, status 
 •	created_at, updated_at 
 otpTokens
-•	_id, userId, otp 
-•	purpose (REGISTER, RESET_PASSWORD) 
-•	expiresAt, used 
+•	_id, userId, otp
+•	expiresAt
 ________________________________________
 2.2 Quản lý danh mục (Categories)
 Mô tả
@@ -280,6 +279,6 @@ budgets
 •	isAlerted 
 otpTokens
 •	_id, userId 
-•	otp, purpose 
-•	expiresAt, used
+•	otp
+•	expiresAt
 
