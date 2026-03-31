@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import { Transaction } from '../models/transaction.model';
 import { Category } from '../models/category.model';
 import { AuthRequest } from '../middlewares/auth.middleware';
+import { triggerBudgetCheck } from '../utils/budget.util';
 
 export const getTransactions = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -72,6 +73,10 @@ export const createTransaction = async (req: AuthRequest, res: Response, next: N
     });
 
     res.status(201).json({ success: true, message: 'Tạo giao dịch thành công', data: newTransaction });
+
+    if (type === 'EXPENSE') {
+      triggerBudgetCheck(userId!, categoryId, new Date(date));
+    }
   } catch (error) {
     next(error);
   }
@@ -110,6 +115,13 @@ export const updateTransaction = async (req: AuthRequest, res: Response, next: N
     );
 
     res.status(200).json({ success: true, message: 'Cập nhật giao dịch thành công', data: updatedTransaction });
+
+    if (updatedTransaction?.type === 'EXPENSE' || transaction.type === 'EXPENSE') {
+      triggerBudgetCheck(userId!, updatedTransaction!.categoryId, updatedTransaction!.date);
+      if (updates.categoryId || updates.date || updates.type) {
+        triggerBudgetCheck(userId!, transaction.categoryId, transaction.date);
+      }
+    }
   } catch (error) {
     next(error);
   }
@@ -128,6 +140,10 @@ export const deleteTransaction = async (req: AuthRequest, res: Response, next: N
     await Transaction.findByIdAndDelete(id);
 
     res.status(200).json({ success: true, message: 'Xóa giao dịch thành công' });
+
+    if (transaction.type === 'EXPENSE') {
+      triggerBudgetCheck(userId!, transaction.categoryId, transaction.date);
+    }
   } catch (error) {
     next(error);
   }
