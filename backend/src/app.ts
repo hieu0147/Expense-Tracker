@@ -7,6 +7,7 @@ import userRoutes from './routers/user.route';
 import categoryRoutes from './routers/category.route';
 import transactionRoutes from './routers/transaction.route';
 import budgetRoutes from './routers/budget.route';
+import reportRoutes from './routers/report.route';
 
 const app: Express = express();
 
@@ -28,7 +29,7 @@ app.use('/users', userRoutes);
 app.use('/categories', categoryRoutes);
 app.use('/transactions', transactionRoutes);
 app.use('/budgets', budgetRoutes);
-// app.use('/api/reports', reportRoutes);
+app.use('/reports', reportRoutes);
 
 // Global Error Handler Middleware
 app.use(errorHandler);
