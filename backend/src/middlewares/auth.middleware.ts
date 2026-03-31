@@ -24,3 +24,10 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     return res.status(403).json({ success: false, message: 'Invalid or expired token.' });
   }
 };
+
+export const authorizeAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (req.user?.role !== 'ADMIN') {
+    return res.status(403).json({ success: false, message: 'Quyền truy cập bị từ chối. Yêu cầu quyền ADMIN.' });
+  }
+  next();
+};

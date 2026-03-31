@@ -4,6 +4,7 @@ import { swaggerSpec } from './swagger/swagger';
 import { errorHandler } from './middlewares/error.middleware';
 import authRoutes from './routers/auth.route';
 import userRoutes from './routers/user.route';
+import categoryRoutes from './routers/category.route';
 
 const app: Express = express();
 
@@ -22,7 +23,7 @@ app.get('/health', (req: Request, res: Response) => {
 // TODO: Import and use routers
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
-// app.use('/api/categories', categoryRoutes);
+app.use('/categories', categoryRoutes);
 // app.use('/api/transactions', transactionRoutes);
 // app.use('/api/budgets', budgetRoutes);
 // app.use('/api/reports', reportRoutes);
