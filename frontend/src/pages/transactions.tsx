@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { format } from 'date-fns';
+import { useState, useMemo, useEffect } from 'react';
+import { format, endOfMonth } from 'date-fns';
 import { Plus, Search, Filter, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,61 +11,89 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useTransactions, useDeleteTransaction } from '@/hooks/use-transactions';
 import { useCategories } from '@/hooks/use-categories';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { TransactionDialog } from '@/components/transaction-dialog';
+import type { Transaction } from '@/types';
+
+const PAGE_SIZE = 5;
 
 export default function TransactionsPage() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<any>(null);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [page, setPage] = useState(1);
+  const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
 
   const currentMonth = format(new Date(), 'yyyy-MM');
   const monthStart = format(new Date(currentMonth + '-01'), 'yyyy-MM-dd');
+  const monthEnd = format(endOfMonth(new Date(currentMonth + '-01')), 'yyyy-MM-dd');
 
-  const { data: transactions = [], isLoading } = useTransactions({
+  const hasSearch = search.trim().length > 0;
+
+  const { data, isLoading } = useTransactions({
     startDate: monthStart,
+    endDate: monthEnd,
+    page: hasSearch ? 1 : page,
+    limit: hasSearch ? 500 : PAGE_SIZE,
+    type: typeFilter === 'all' ? undefined : typeFilter,
+    categoryId: categoryFilter === 'all' ? undefined : categoryFilter,
   });
+
+  const transactions = data?.items ?? [];
+  const pagination = data?.pagination;
 
   const { data: categories = [] } = useCategories();
   const deleteTransaction = useDeleteTransaction();
 
+  useEffect(() => {
+    setPage(1);
+  }, [monthStart, monthEnd, typeFilter, categoryFilter, search]);
+
   const filteredTransactions = useMemo(() => {
+    if (!hasSearch) return transactions;
+    const q = search.toLowerCase().trim();
     return transactions.filter((transaction) => {
-      const cat = transaction.categories as any;
-      const matchesSearch =
-        !search ||
-        cat.name.toLowerCase().includes(search.toLowerCase()) ||
-        transaction.note?.toLowerCase().includes(search.toLowerCase());
-
-      const matchesType =
-        typeFilter === 'all' || transaction.type === typeFilter;
-
-      const matchesCategory =
-        categoryFilter === 'all' || transaction.category_id === categoryFilter;
-
-      return matchesSearch && matchesType && matchesCategory;
+      const cat = transaction.categories as { name?: string } | undefined;
+      return (
+        (cat?.name || '').toLowerCase().includes(q) ||
+        transaction.note?.toLowerCase().includes(q)
+      );
     });
-  }, [transactions, search, typeFilter, categoryFilter]);
+  }, [transactions, hasSearch, search]);
 
-  const handleEdit = (transaction: any) => {
+  const handleEdit = (transaction: Transaction) => {
     setEditingTransaction(transaction);
     setDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Bạn có chắc muốn xóa giao dịch này?')) {
-      deleteTransaction.mutate(id);
-    }
+  const openDelete = (transaction: Transaction) => {
+    setDeleteTarget(transaction);
+  };
+
+  const onConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    await deleteTransaction.mutateAsync(deleteTarget.id);
+    setDeleteTarget(null);
   };
 
   const handleCloseDialog = () => {
     setDialogOpen(false);
     setEditingTransaction(null);
   };
+
+  const showPagination = !hasSearch && pagination && pagination.totalPages > 1;
 
   return (
     <div className="space-y-6">
@@ -95,7 +123,7 @@ export default function TransactionsPage() {
               />
             </div>
 
-            <Select value={typeFilter} onValueChange={(value: any) => setTypeFilter(value)}>
+            <Select value={typeFilter} onValueChange={(value: 'all' | 'income' | 'expense') => setTypeFilter(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Loại giao dịch" />
               </SelectTrigger>
@@ -135,6 +163,40 @@ export default function TransactionsPage() {
         </CardContent>
       </Card>
 
+      <Dialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Xóa giao dịch</DialogTitle>
+            <DialogDescription>
+              Bạn có chắc muốn xóa giao dịch
+              {deleteTarget && (
+                <>
+                  {' '}
+                  <span className="font-semibold text-foreground">
+                    {formatCurrency(Number(deleteTarget.amount))}
+                  </span>{' '}
+                  — {formatDate(deleteTarget.date)}
+                </>
+              )}
+              ? Thao tác này không thể hoàn tác.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={() => setDeleteTarget(null)}>
+              Hủy
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleteTransaction.isPending}
+              onClick={onConfirmDelete}
+            >
+              {deleteTransaction.isPending ? 'Đang xóa...' : 'Xóa'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -148,68 +210,96 @@ export default function TransactionsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {filteredTransactions.map((transaction) => {
-            const cat = transaction.categories as any;
-            return (
-              <Card key={transaction.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div
-                        className="w-12 h-12 rounded-full flex items-center justify-center text-lg"
-                        style={{ backgroundColor: `${cat.color}20` }}
-                      >
-                        <span style={{ color: cat.color }}>{cat.icon}</span>
-                      </div>
-                      <div>
-                        <p className="font-semibold">{cat.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatDate(transaction.date)}
-                        </p>
-                        {transaction.note && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {transaction.note}
+        <>
+          <div className="space-y-4">
+            {filteredTransactions.map((transaction) => {
+              const cat = transaction.categories as { name?: string; icon?: string; color?: string } | undefined;
+              return (
+                <Card key={transaction.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center text-lg"
+                          style={{ backgroundColor: `${cat?.color ?? '#888'}20` }}
+                        >
+                          <span style={{ color: cat?.color ?? '#888' }}>{cat?.icon ?? '—'}</span>
+                        </div>
+                        <div>
+                          <p className="font-semibold">{cat?.name ?? 'Hạng mục'}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatDate(transaction.date)}
                           </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`text-xl font-bold ${
-                          transaction.type === 'income'
-                            ? 'text-income'
-                            : 'text-expense'
-                        }`}
-                      >
-                        {transaction.type === 'income' ? '+' : '-'}
-                        {formatCurrency(Number(transaction.amount))}
+                          {transaction.note && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {transaction.note}
+                            </p>
+                          )}
+                        </div>
                       </div>
 
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(transaction)}
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={`text-xl font-bold ${
+                            transaction.type === 'income'
+                              ? 'text-income'
+                              : 'text-expense'
+                          }`}
                         >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(transaction.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                          {transaction.type === 'income' ? '+' : '-'}
+                          {formatCurrency(Number(transaction.amount))}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(transaction)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openDelete(transaction)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {showPagination && pagination && (
+            <div className="flex items-center justify-between pt-2">
+              <p className="text-sm text-muted-foreground">
+                Trang {pagination.page} / {pagination.totalPages} — Tổng {pagination.total} giao dịch
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Trước
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= pagination.totalPages}
+                  onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                >
+                  Sau
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       <TransactionDialog

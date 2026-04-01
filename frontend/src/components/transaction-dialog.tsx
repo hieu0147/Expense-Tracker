@@ -73,12 +73,16 @@ export function TransactionDialog({
   );
 
   useEffect(() => {
+    if (!open) return;
     if (transaction) {
+      const dateInput = transaction.date
+        ? format(new Date(transaction.date), 'yyyy-MM-dd')
+        : format(new Date(), 'yyyy-MM-dd');
       reset({
         amount: transaction.amount.toString(),
         type: transaction.type,
         category_id: transaction.category_id,
-        date: transaction.date,
+        date: dateInput,
         note: transaction.note || '',
       });
     } else {
@@ -90,13 +94,7 @@ export function TransactionDialog({
         note: '',
       });
     }
-  }, [transaction, reset]);
-
-  useEffect(() => {
-    if (filteredCategories.length > 0 && !watch('category_id')) {
-      setValue('category_id', '');
-    }
-  }, [selectedType, filteredCategories]);
+  }, [open, transaction?.id, reset]);
 
   const onSubmit = async (data: TransactionForm) => {
     if (!user) return;
@@ -110,7 +108,7 @@ export function TransactionDialog({
             type: data.type,
             category_id: data.category_id,
             date: data.date,
-            note: data.note || null,
+            note: data.note ?? '',
           },
         });
       } else {
@@ -120,7 +118,7 @@ export function TransactionDialog({
           type: data.type,
           category_id: data.category_id,
           date: data.date,
-          note: data.note || null,
+          note: data.note || '',
         });
       }
       onClose();
@@ -147,7 +145,10 @@ export function TransactionDialog({
             <Label>Loại giao dịch</Label>
             <Select
               value={watch('type')}
-              onValueChange={(value: any) => setValue('type', value)}
+              onValueChange={(value: 'income' | 'expense') => {
+                setValue('type', value);
+                setValue('category_id', '');
+              }}
             >
               <SelectTrigger>
                 <SelectValue />
