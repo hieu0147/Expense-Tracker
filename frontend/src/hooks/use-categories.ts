@@ -1,17 +1,46 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/components/ui/use-toast';
 import { Category, CategoryInsert, CategoryUpdate } from '@/types';
+import { api } from '@/lib/api';
+
+type BackendCategory = {
+  _id: string;
+  userId?: string | null;
+  name: string;
+  type: 'INCOME' | 'EXPENSE';
+  icon: string;
+  color: string;
+  isDefault: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+function mapBackendCategory(c: BackendCategory): Category {
+  return {
+    id: c._id,
+    user_id: c.userId || undefined,
+    name: c.name,
+    type: c.type === 'INCOME' ? 'income' : 'expense',
+    icon: c.icon,
+    color: c.color,
+    is_default: c.isDefault,
+    created_at: c.createdAt,
+    updated_at: c.updatedAt,
+  };
+}
+
+function toBackendType(type: CategoryInsert['type']): BackendCategory['type'] {
+  return type === 'income' ? 'INCOME' : 'EXPENSE';
+}
 
 export function useCategories(type?: 'income' | 'expense') {
   return useQuery({
     queryKey: ['categories', type],
     queryFn: async (): Promise<Category[]> => {
-      // TODO: Call backend API to fetch categories
-      return [
-        { id: '1', name: 'Lương', type: 'income', icon: 'banknote', color: '#10b981', is_default: true },
-        { id: '2', name: 'Ăn uống', type: 'expense', icon: 'utensils', color: '#ef4444', is_default: true },
-        { id: '3', name: 'Đi lại', type: 'expense', icon: 'car', color: '#dc2626', is_default: true }
-      ].filter(c => !type || c.type === type) as Category[];
+      const res: any = await api.get('/categories');
+      const items = (res?.data || res) as BackendCategory[];
+      const mapped = (items || []).map(mapBackendCategory);
+      return type ? mapped.filter((c) => c.type === type) : mapped;
     },
   });
 }
@@ -21,8 +50,14 @@ export function useCreateCategory() {
 
   return useMutation({
     mutationFn: async (category: CategoryInsert): Promise<Category> => {
-      // TODO: Call backend API to create a category
-      return { id: Math.random().toString(), ...category } as Category;
+      const res: any = await api.post('/categories', {
+        name: category.name,
+        type: toBackendType(category.type),
+        icon: category.icon,
+        color: category.color,
+      });
+      const created = (res?.data || res) as BackendCategory;
+      return mapBackendCategory(created);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
@@ -52,8 +87,11 @@ export function useUpdateCategory() {
       id: string;
       updates: CategoryUpdate;
     }): Promise<Category> => {
-      // TODO: Call backend API to update a category
-      return { id, ...updates } as Category;
+      const payload: any = { ...updates };
+      if (payload.type) payload.type = toBackendType(payload.type);
+      const res: any = await api.put(`/categories/${id}`, payload);
+      const updated = (res?.data || res) as BackendCategory;
+      return mapBackendCategory(updated);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
@@ -77,7 +115,7 @@ export function useDeleteCategory() {
 
   return useMutation({
     mutationFn: async (id: string): Promise<void> => {
-      // TODO: Call backend API to delete a category
+      await api.delete(`/categories/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
