@@ -23,10 +23,14 @@ const registerSchema = z.object({
 type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
-  const { signUp, user } = useAuth();
+  const { signUp, verifyOtp, resendOtp, user } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
 
   const {
     register,
@@ -43,12 +47,85 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterForm) => {
     setIsLoading(true);
     try {
-      await signUp(data.email, data.password, data.fullName);
+      const success = await signUp(data.email, data.password, data.fullName);
+      if (success) {
+        setRegisteredEmail(data.email);
+        setIsVerifying(true);
+      }
     } catch (error) {
     } finally {
       setIsLoading(false);
     }
   };
+
+  const onVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpCode) return;
+    setIsLoading(true);
+    try {
+      await verifyOtp(registeredEmail, otpCode);
+    } catch (error) {
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isVerifying) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
+        <Card className="w-full max-w-md shadow-xl">
+          <CardHeader className="space-y-1 text-center">
+            <div className="flex justify-center mb-4">
+              <div className="p-3 bg-primary/10 rounded-full">
+                <Wallet className="h-10 w-10 text-primary" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl font-bold">Xác thực OTP</CardTitle>
+            <CardDescription>
+              Chúng tôi đã gửi mã xác thực tới {registeredEmail}
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={onVerify}>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="otpCode">Mã OTP</Label>
+                <Input
+                  id="otpCode"
+                  type="text"
+                  placeholder="Nhập mã 6 chữ số"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  maxLength={6}
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col space-y-4">
+              <Button type="submit" className="w-full" disabled={isLoading || otpCode.length < 6}>
+                {isLoading ? 'Đang xác thực...' : 'Xác thực'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                disabled={isLoading}
+                onClick={async () => {
+                  setIsLoading(true);
+                  try {
+                    await resendOtp(registeredEmail);
+                  } catch (error) {
+                  } finally {
+                    setIsLoading(false);
+                  }
+                }}
+              >
+                Gửi lại mã OTP
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">

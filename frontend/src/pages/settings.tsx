@@ -26,7 +26,7 @@ export default function SettingsPage() {
           <div>
             <p className="text-sm font-medium text-muted-foreground">Tên</p>
             <p className="text-lg">
-              {user?.user_metadata?.full_name || 'Chưa cập nhật'}
+              {user?.name || 'Chưa cập nhật'}
             </p>
           </div>
           <div>
