@@ -8,8 +8,11 @@ import categoryRoutes from './routers/category.route';
 import transactionRoutes from './routers/transaction.route';
 import budgetRoutes from './routers/budget.route';
 import reportRoutes from './routers/report.route';
+import cors from 'cors';
 
 const app: Express = express();
+
+app.use(cors());
 
 // Middleware: Parse JSON & URL-encoded request body
 app.use(express.json());

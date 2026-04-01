@@ -173,7 +173,7 @@ budgets
 •	_id, userId, categoryId 
 •	limitAmount, spentAmount 
 •	month, year 
-•	isAlerted 
+•	warningSent 
 •	created_at, updated_at 
 ________________________________________
 2.5 Dashboard & Báo cáo
@@ -273,9 +273,9 @@ transactions
 •	created_at, updated_at 
 budgets
 •	_id, userId, categoryId 
-•	limitAmount, spentAmount 
+•	amount, spentAmount 
 •	month, year 
-•	isAlerted 
+•	warningSent 
 otpTokens
 •	_id, userId 
 •	otp
