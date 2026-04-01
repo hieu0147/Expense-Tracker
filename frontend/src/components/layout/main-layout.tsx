@@ -105,7 +105,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             </div>
             <div className="px-4 py-2">
               <p className="text-sm font-medium truncate">
-                {user?.user_metadata?.full_name || user?.email}
+                {user?.name || user?.email}
               </p>
               <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
             </div>
