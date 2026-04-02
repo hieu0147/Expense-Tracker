@@ -4,8 +4,8 @@ import { vi } from 'date-fns/locale';
 import { Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useTransactions } from '@/hooks/use-transactions';
 import { formatCurrency } from '@/lib/utils';
+import { useIncomeVsExpense } from '@/hooks/use-reports';
 import {
   BarChart,
   Bar,
@@ -18,50 +18,37 @@ import {
 } from 'recharts';
 
 export default function ReportsPage() {
-  const monthStart = format(startOfMonth(new Date()), 'yyyy-MM-dd');
-  const monthEnd = format(endOfMonth(new Date()), 'yyyy-MM-dd');
+  // 12 months (including current month)
+  const startDateObj = startOfMonth(subMonths(new Date(), 11));
+  const endDateObj = endOfMonth(new Date());
+  const startDate = startDateObj.toISOString();
+  const endDate = endDateObj.toISOString();
 
-  const { data: txData } = useTransactions({
-    startDate: monthStart,
-    endDate: monthEnd,
+  const { data: chartBackend, isLoading } = useIncomeVsExpense({
+    startDate,
+    endDate,
+    groupBy: 'month',
   });
-  const transactions = txData?.items ?? [];
+
+  const rows = chartBackend ?? [];
 
   const monthlyData = useMemo(() => {
-    const months = [];
-    for (let i = 5; i >= 0; i--) {
-      const date = subMonths(new Date(), i);
-      const start = format(startOfMonth(date), 'yyyy-MM-dd');
-      const end = format(endOfMonth(date), 'yyyy-MM-dd');
+    return rows.map((r) => {
+      // backend groupBy=month → date format: YYYY-MM
+      const monthStart = new Date(`${r.date}-01T00:00:00.000Z`);
+      return {
+        month: format(monthStart, 'MM/yyyy', { locale: vi }),
+        income: r.income,
+        expense: r.expense,
+      };
+    });
+  }, [rows]);
 
-      const monthTrans = transactions.filter(
-        (t) => t.date >= start && t.date <= end
-      );
-
-      const income = monthTrans
-        .filter((t) => t.type === 'income')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
-
-      const expense = monthTrans
-        .filter((t) => t.type === 'expense')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
-
-      months.push({
-        month: format(date, 'MM/yyyy', { locale: vi }),
-        income,
-        expense,
-      });
-    }
-    return months;
-  }, [transactions]);
-
-  const totalIncome = transactions
-    .filter((t) => t.type === 'income')
-    .reduce((sum, t) => sum + Number(t.amount), 0);
-
-  const totalExpense = transactions
-    .filter((t) => t.type === 'expense')
-    .reduce((sum, t) => sum + Number(t.amount), 0);
+  const totals = useMemo(() => {
+    const totalIncome = rows.reduce((sum, r) => sum + Number(r.income), 0);
+    const totalExpense = rows.reduce((sum, r) => sum + Number(r.expense), 0);
+    return { totalIncome, totalExpense };
+  }, [rows]);
 
   return (
     <div className="space-y-6">
@@ -85,7 +72,7 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-income">
-              {formatCurrency(totalIncome)}
+              {formatCurrency(totals.totalIncome)}
             </div>
           </CardContent>
         </Card>
@@ -96,7 +83,7 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-expense">
-              {formatCurrency(totalExpense)}
+              {formatCurrency(totals.totalExpense)}
             </div>
           </CardContent>
         </Card>
@@ -104,20 +91,60 @@ export default function ReportsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Biểu đồ thu chi 6 tháng gần nhất</CardTitle>
+          <CardTitle>Biểu đồ thu chi 12 tháng gần nhất</CardTitle>
         </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={monthlyData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip formatter={(value: number) => formatCurrency(value)} />
-              <Legend />
-              <Bar dataKey="income" fill="#10b981" name="Thu nhập" />
-              <Bar dataKey="expense" fill="#ef4444" name="Chi tiêu" />
-            </BarChart>
-          </ResponsiveContainer>
+        <CardContent className="pt-2">
+          {isLoading ? (
+            <div className="flex items-center justify-center min-h-[260px]">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+            </div>
+          ) : (
+            <div className="h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={monthlyData}
+                  margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
+                  barCategoryGap={2} // giảm khoảng cách để cột to hơn nữa
+                >
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
+                  <XAxis
+                    dataKey="month"
+                    tickMargin={8}
+                    tick={{ fontSize: 12 }}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(v: number) => `${Math.round(v / 1_000_000)}tr`}
+                    width={40}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => formatCurrency(value)}
+                    contentStyle={{ borderRadius: 12 }}
+                  />
+                  <Legend
+                    verticalAlign="top"
+                    align="right"
+                    wrapperStyle={{ paddingBottom: 8 }}
+                  />
+                  <Bar
+                    dataKey="income"
+                    fill="#10b981"
+                    name="Thu nhập"
+                    radius={[6, 6, 0, 0]}
+                    maxBarSize={48} // tăng maxBarSize để cột to hơn nữa
+                  />
+                  <Bar
+                    dataKey="expense"
+                    fill="#ef4444"
+                    name="Chi tiêu"
+                    radius={[6, 6, 0, 0]}
+                    maxBarSize={48} // tăng maxBarSize để cột to hơn nữa
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -31,20 +31,21 @@ export default function TransactionsPage() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [timeFilter, setTimeFilter] = useState<'all' | 'month'>('all');
+  const [selectedMonth, setSelectedMonth] = useState<string>(format(new Date(), 'yyyy-MM'));
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [page, setPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
 
-  const currentMonth = format(new Date(), 'yyyy-MM');
-  const monthStart = format(new Date(currentMonth + '-01'), 'yyyy-MM-dd');
-  const monthEnd = format(endOfMonth(new Date(currentMonth + '-01')), 'yyyy-MM-dd');
+  const monthStart = format(new Date(selectedMonth + '-01'), 'yyyy-MM-dd');
+  const monthEnd = format(endOfMonth(new Date(selectedMonth + '-01')), 'yyyy-MM-dd');
 
   const hasSearch = search.trim().length > 0;
 
   const { data, isLoading } = useTransactions({
-    startDate: monthStart,
-    endDate: monthEnd,
+    startDate: timeFilter === 'month' ? monthStart : undefined,
+    endDate: timeFilter === 'month' ? monthEnd : undefined,
     page: hasSearch ? 1 : page,
     limit: hasSearch ? 500 : PAGE_SIZE,
     type: typeFilter === 'all' ? undefined : typeFilter,
@@ -59,7 +60,7 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [monthStart, monthEnd, typeFilter, categoryFilter, search]);
+  }, [monthStart, monthEnd, timeFilter, selectedMonth, typeFilter, categoryFilter, search]);
 
   const filteredTransactions = useMemo(() => {
     if (!hasSearch) return transactions;
@@ -112,7 +113,7 @@ export default function TransactionsPage() {
 
       <Card>
         <CardContent className="pt-6">
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:flex-wrap">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -123,7 +124,8 @@ export default function TransactionsPage() {
               />
             </div>
 
-            <Select value={typeFilter} onValueChange={(value: 'all' | 'income' | 'expense') => setTypeFilter(value)}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap lg:flex-nowrap lg:ml-auto">
+              <Select value={typeFilter} onValueChange={(value: 'all' | 'income' | 'expense') => setTypeFilter(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Loại giao dịch" />
               </SelectTrigger>
@@ -133,6 +135,30 @@ export default function TransactionsPage() {
                 <SelectItem value="expense">Chi tiêu</SelectItem>
               </SelectContent>
             </Select>
+
+            <Select
+              value={timeFilter}
+              onValueChange={(value: 'all' | 'month') => setTimeFilter(value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Thời gian" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả thời gian</SelectItem>
+                <SelectItem value="month">Theo tháng</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {timeFilter === 'month' && (
+              <Input
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v) setSelectedMonth(v);
+                }}
+              />
+            )}
 
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger>
@@ -154,11 +180,13 @@ export default function TransactionsPage() {
                 setSearch('');
                 setTypeFilter('all');
                 setCategoryFilter('all');
+                setTimeFilter('all');
               }}
             >
               <Filter className="h-4 w-4 mr-2" />
               Xóa bộ lọc
             </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
