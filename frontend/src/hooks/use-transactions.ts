@@ -164,6 +164,8 @@ export function useCreateTransaction() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      // Budgets GET computes `spentAmount` from transactions, so must refetch budgets too.
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
       toast({
         title: 'Thành công',
@@ -204,6 +206,8 @@ export function useUpdateTransaction() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      // Budgets GET computes `spentAmount` from transactions, so must refetch budgets too.
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
       toast({
         title: 'Thành công',
@@ -229,6 +233,8 @@ export function useDeleteTransaction() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      // Budgets GET computes `spentAmount` from transactions, so must refetch budgets too.
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
       toast({
         title: 'Thành công',

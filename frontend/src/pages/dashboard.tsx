@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, AlertCircle } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Wallet, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTransactions } from '@/hooks/use-transactions';
 import { useBudgets } from '@/hooks/use-budgets';
@@ -13,10 +13,11 @@ export default function DashboardPage() {
   const monthStart = format(startOfMonth(new Date()), 'yyyy-MM-dd');
   const monthEnd = format(endOfMonth(new Date()), 'yyyy-MM-dd');
 
-  const { data: transactions = [], isLoading } = useTransactions({
+  const { data: txData, isLoading } = useTransactions({
     startDate: monthStart,
     endDate: monthEnd,
   });
+  const transactions = txData?.items ?? [];
 
   const { data: budgets = [] } = useBudgets(currentMonth);
 
@@ -62,27 +63,22 @@ export default function DashboardPage() {
   const budgetAlerts = useMemo(() => {
     return budgets
       .map((budget) => {
-        const spent = transactions
-          .filter(
-            (t) =>
-              t.type === 'expense' && t.category_id === budget.category_id
-          )
-          .reduce((sum, t) => sum + Number(t.amount), 0);
-
-        const percentage = (spent / Number(budget.amount_limit)) * 100;
+        const spent = Number(budget.spent_amount ?? 0);
+        const limit = Number(budget.amount_limit);
+        const percentage = limit > 0 ? (spent / limit) * 100 : 0;
         const cat = budget.categories as any;
 
         return {
           id: budget.id,
-          categoryName: cat.name,
+          categoryName: cat?.name ?? 'Hạng mục',
           spent,
-          limit: Number(budget.amount_limit),
+          limit,
           percentage,
         };
       })
       .filter((b) => b.percentage >= 80)
       .sort((a, b) => b.percentage - a.percentage);
-  }, [budgets, transactions]);
+  }, [budgets]);
 
   if (isLoading) {
     return (
