@@ -123,6 +123,15 @@ export const createAdminCategory = async (req: AuthRequest, res: Response, next:
   }
 };
 
+export const getAdminCategories = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const categories = await Category.find({ isDefault: true }).sort({ createdAt: -1 });
+    res.status(200).json({ success: true, data: categories });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const updateAdminCategory = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;

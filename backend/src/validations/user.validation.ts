@@ -13,3 +13,9 @@ export const changePasswordSchema = z.object({
     newPassword: z.string().min(8, 'Password must be at least 8 characters'),
   }),
 });
+
+export const adminUpdateUserStatusSchema = z.object({
+  body: z.object({
+    status: z.enum(['PENDING', 'ACTIVE', 'BANNED']),
+  }),
+});
