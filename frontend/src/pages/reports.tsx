@@ -1,9 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useTransactions } from '@/hooks/use-transactions';
 import { formatCurrency } from '@/lib/utils';
@@ -19,15 +18,14 @@ import {
 } from 'recharts';
 
 export default function ReportsPage() {
-  const [period, setPeriod] = useState<'month' | 'quarter' | 'year'>('month');
-
   const monthStart = format(startOfMonth(new Date()), 'yyyy-MM-dd');
   const monthEnd = format(endOfMonth(new Date()), 'yyyy-MM-dd');
 
-  const { data: transactions = [] } = useTransactions({
+  const { data: txData } = useTransactions({
     startDate: monthStart,
     endDate: monthEnd,
   });
+  const transactions = txData?.items ?? [];
 
   const monthlyData = useMemo(() => {
     const months = [];
