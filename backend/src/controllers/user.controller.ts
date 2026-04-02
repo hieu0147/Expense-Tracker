@@ -67,3 +67,65 @@ export const changePassword = async (req: AuthRequest, res: Response, next: Next
     next(error);
   }
 };
+
+export const getUsersForAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const users = await User.find({}, '-password').sort({ created_at: -1 });
+    res.status(200).json({
+      success: true,
+      data: users,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateUserStatusForAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body as { status: 'PENDING' | 'ACTIVE' | 'BANNED' };
+
+    if (req.user?.userId === id) {
+      return res.status(400).json({ success: false, message: 'Không thể thay đổi trạng thái chính tài khoản admin hiện tại.' });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+    }
+
+    user.status = status;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Cập nhật trạng thái người dùng thành công',
+      data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteUserForAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    if (req.user?.userId === id) {
+      return res.status(400).json({ success: false, message: 'Không thể xóa chính tài khoản admin hiện tại.' });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+    }
+
+    await User.findByIdAndDelete(id);
+    res.status(200).json({
+      success: true,
+      message: 'Xóa người dùng thành công',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
