@@ -13,6 +13,8 @@ interface AuthContextType {
   resendOtp: (email: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (email: string, otp: string, newPassword: string) => Promise<void>;
+  updateProfile: (data: { name?: string; avatar?: string }) => Promise<void>;
+  changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -170,6 +172,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateProfile = async (data: { name?: string; avatar?: string }) => {
+    try {
+      const res: any = await api.put('/users/me', data);
+      const userData = res?.data ?? res;
+      if (res?.success && userData) {
+        setUser((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            name: userData.name ?? prev.name,
+            avatar: userData.avatar ?? prev.avatar,
+          };
+        });
+        toast({
+          title: 'Thành công',
+          description: 'Cập nhật thông tin tài khoản thành công',
+        });
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Lỗi',
+        description: getErrorMessage(error) || 'Không thể cập nhật thông tin',
+      });
+      throw error;
+    }
+  };
+
+  const changePassword = async (oldPassword: string, newPassword: string) => {
+    try {
+      const res: any = await api.put('/users/password', { oldPassword, newPassword });
+      if (res?.success) {
+        toast({
+          title: 'Thành công',
+          description: 'Đổi mật khẩu thành công',
+        });
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Lỗi',
+        description: getErrorMessage(error) || 'Không thể đổi mật khẩu',
+      });
+      throw error;
+    }
+  };
+
   const signIn = async (email: string, password: string) => {
     try {
       const response: any = await api.post('/auth/login', {
@@ -242,7 +291,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, verifyOtp, resendOtp, forgotPassword, resetPassword, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signUp, signIn, verifyOtp, resendOtp, forgotPassword, resetPassword, updateProfile, changePassword, signOut }}>
       {children}
     </AuthContext.Provider>
   );
