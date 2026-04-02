@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { endOfMonth, format, startOfMonth } from 'date-fns';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { FilterIcon, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useBudgets } from '@/hooks/use-budgets';
@@ -28,13 +28,16 @@ import {
 } from '@/components/ui/dialog';
 
 export default function BudgetsPage() {
-  const currentMonth = format(new Date(), 'yyyy-MM');
-  const monthStartDate = startOfMonth(new Date(`${currentMonth}-01T00:00:00.000Z`));
+  const [selectedMonth, setSelectedMonth] = useState<string>(
+    format(new Date(), 'yyyy-MM'),
+  );
+
+  const monthStartDate = startOfMonth(new Date(`${selectedMonth}-01T00:00:00.000Z`));
   const monthEndDate = endOfMonth(monthStartDate);
   const monthStart = format(monthStartDate, 'yyyy-MM-dd');
   const monthEnd = format(monthEndDate, 'yyyy-MM-dd');
 
-  const { data: budgets = [] } = useBudgets(currentMonth);
+  const { data: budgets = [] } = useBudgets(selectedMonth);
   const { data: expenseCategories = [] } = useCategories('expense');
 
   const createBudget = useCreateBudget();
@@ -66,7 +69,7 @@ export default function BudgetsPage() {
     setAmountLimit('');
     setStartDate(monthStart);
     setEndDate(monthEnd);
-  }, [dialogOpen, editing, monthStart]);
+  }, [dialogOpen, editing, monthStart, monthEnd]);
 
   const budgetWithSpending = useMemo(() => {
     return budgets.map((budget) => {
@@ -143,14 +146,30 @@ export default function BudgetsPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Ngân sách</h1>
             <p className="text-muted-foreground">
-              Theo dõi và quản lý ngân sách tháng {format(new Date(), 'MM/yyyy')}
+              Theo dõi và quản lý ngân sách tháng{' '}
+              {format(monthStartDate, 'MM/yyyy')}
             </p>
           </div>
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-2" />
-            Thêm ngân sách
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Thêm ngân sách
+            </Button>
+          </div>
         </div>
+      </div>
+      <div className="flex flex-row flex-nowrap items-center gap-3 rounded-md border px-4 py-2 bg-white dark:bg-background shadow-sm w-fit">
+        {/* <span className="whitespace-nowrap text-base font-medium text-muted-foreground">Chọn</span> */}
+        <FilterIcon className="h-4 w-4 text-muted-foreground" />
+        <Input
+          type="month"
+          className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary transition-all text-[15px] font-semibold bg-muted-foreground/5 dark:bg-muted dark:text-foreground min-w-[130px]"
+          value={selectedMonth}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v) setSelectedMonth(v);
+          }}
+        />
       </div>
 
       {budgetWithSpending.length === 0 ? (
