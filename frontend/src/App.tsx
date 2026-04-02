@@ -13,6 +13,7 @@ import CategoriesPage from '@/pages/categories';
 import BudgetsPage from '@/pages/budgets';
 import ReportsPage from '@/pages/reports';
 import SettingsPage from '@/pages/settings';
+import AdminPage from '@/pages/admin';
 import LoginPage from '@/pages/login';
 import RegisterPage from '@/pages/register';
 
@@ -81,6 +82,16 @@ function App() {
                 <ProtectedRoute>
                   <MainLayout>
                     <SettingsPage />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <AdminPage />
                   </MainLayout>
                 </ProtectedRoute>
               }

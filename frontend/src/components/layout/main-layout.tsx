@@ -6,6 +6,7 @@ import {
   PiggyBank,
   BarChart3,
   Settings,
+  Shield,
   Menu,
   X,
   Moon,
@@ -18,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/auth-context';
 import { cn } from '@/lib/utils';
 
-const navigation = [
+const baseNavigation = [
   { name: 'Tổng quan', href: '/', icon: LayoutDashboard },
   { name: 'Giao dịch', href: '/transactions', icon: Receipt },
   { name: 'Hạng mục', href: '/categories', icon: FolderTree },
@@ -45,6 +46,9 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
   const userDisplayName = user?.name || user?.email || 'Người dùng';
   const userInitial = userDisplayName.charAt(0).toUpperCase();
+  const navigation = user?.role === 'ADMIN'
+    ? [...baseNavigation, { name: 'Admin', href: '/admin', icon: Shield }]
+    : baseNavigation;
 
   return (
     <div className="min-h-screen bg-background">
@@ -83,7 +87,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
               ) : (
                 <span className="text-sm font-semibold text-muted-foreground">{userInitial}</span>
               )}
-              
+
             </div>
 
             <span className="hidden md:inline text-lg font-medium max-w-[180px] truncate mr-5">
@@ -135,7 +139,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
           {/* Mobile-only user actions in menu */}
           <div className="lg:hidden border-t p-4 space-y-3">
             <div className="flex items-center gap-3">
-            <Button
+              <Button
                 variant="ghost"
                 size="icon"
                 onClick={toggleDarkMode}
@@ -156,7 +160,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            
+
 
             <Button
               variant="destructive"

@@ -4,6 +4,7 @@ export interface User {
   name: string;
   role?: string;
   avatar?: string;
+  status?: 'PENDING' | 'ACTIVE' | 'BANNED';
 }
 
 export interface Category {

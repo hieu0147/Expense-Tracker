@@ -53,7 +53,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
              name: userData.name,
              email: userData.email,
              role: userData.role,
-             avatar: userData.avatar
+             avatar: userData.avatar,
+             status: userData.status
           });
         } else {
           localStorage.removeItem('token');
@@ -236,7 +237,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
            email: userData.email,
            name: userData.name,
            role: userData.role,
-           avatar: userData.avatar
+           avatar: userData.avatar,
+           status: userData.status
         });
 
         toast({
