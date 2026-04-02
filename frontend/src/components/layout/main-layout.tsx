@@ -43,33 +43,74 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     setDarkMode(!darkMode);
   };
 
+  const userDisplayName = user?.name || user?.email || 'Người dùng';
+  const userInitial = userDisplayName.charAt(0).toUpperCase();
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Wallet className="h-6 w-6 text-primary" />
-          <span className="font-bold text-lg">Expense Tracker</span>
+      {/* Top header bar */}
+      <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-card border-b px-4 lg:px-6">
+        <div className="h-full flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+            <div className="flex items-center gap-2 min-w-0">
+              <Wallet className="h-8 w-8 text-primary shrink-0" />
+              <span className="font-bold text-2xl truncate">Expense Tracker</span>
+            </div>
+          </div>
+
+          <div className="hidden lg:flex items-center gap-2 lg:gap-3 shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleDarkMode}
+              className="h-9 w-9"
+              title="Dark/Light mode"
+            >
+              {darkMode ? <Sun className="h-7 w-7" /> : <Moon className="h-7 w-7" />}
+            </Button>
+
+            <div className="h-11 w-11 rounded-full overflow-hidden border bg-muted flex items-center justify-center">
+              {user?.avatar ? (
+                <img src={user.avatar} alt="avatar" className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-sm font-semibold text-muted-foreground">{userInitial}</span>
+              )}
+              
+            </div>
+
+            <span className="hidden md:inline text-lg font-medium max-w-[180px] truncate mr-5">
+              {userDisplayName}
+            </span>
+
+            <Button
+              variant="destructive"
+              size="sm"
+              className="gap-2"
+              onClick={signOut}
+            >
+              <LogOut className="h-6 w-6" />
+              <span className="hidden sm:inline">Đăng xuất</span>
+            </Button>
+          </div>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
-          {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
-      </div>
+      </header>
 
       <div
         className={cn(
-          'fixed inset-y-0 left-0 z-40 w-64 bg-card border-r transform transition-transform duration-300 ease-in-out lg:translate-x-0',
+          'fixed top-16 bottom-0 left-0 z-40 w-64 bg-card border-r transform transition-transform duration-300 ease-in-out lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         <div className="flex flex-col h-full">
-          <div className="p-6 border-b hidden lg:block">
-            <div className="flex items-center gap-2">
-              <Wallet className="h-8 w-8 text-primary" />
-              <span className="font-bold text-xl">Expense Tracker</span>
-            </div>
-          </div>
-
-          <nav className="flex-1 p-4 space-y-1 mt-16 lg:mt-0">
+          <nav className="flex-1 p-4 space-y-1">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
               return (
@@ -91,10 +132,10 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          <div className="p-4 border-t space-y-2">
-            <div className="flex items-center justify-between px-4 py-2">
-              <span className="text-sm text-muted-foreground">Giao diện</span>
-              <Button
+          {/* Mobile-only user actions in menu */}
+          <div className="lg:hidden border-t p-4 space-y-3">
+            <div className="flex items-center gap-3">
+            <Button
                 variant="ghost"
                 size="icon"
                 onClick={toggleDarkMode}
@@ -102,19 +143,30 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
               >
                 {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
+              <div className="h-10 w-10 rounded-full overflow-hidden border bg-muted flex items-center justify-center">
+                {user?.avatar ? (
+                  <img src={user.avatar} alt="avatar" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-sm font-semibold text-muted-foreground">{userInitial}</span>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate">{userDisplayName}</p>
+                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+              </div>
             </div>
-            <div className="px-4 py-2">
-              <p className="text-sm font-medium truncate">
-                {user?.name || user?.email}
-              </p>
-              <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-            </div>
+
+            
+
             <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
-              onClick={signOut}
+              variant="destructive"
+              className="w-full gap-2"
+              onClick={() => {
+                setSidebarOpen(false);
+                signOut();
+              }}
             >
-              <LogOut className="h-5 w-5" />
+              <LogOut className="h-4 w-4" />
               Đăng xuất
             </Button>
           </div>
@@ -128,7 +180,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      <div className="lg:pl-64 pt-16 lg:pt-0">
+      <div className="lg:pl-64 pt-16">
         <main className="p-4 lg:p-8">{children}</main>
       </div>
     </div>

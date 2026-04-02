@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/auth-context';
 // Khai báo biến resendOtpLoading
 const loginSchema = z.object({
   email: z.string().email('Email không hợp lệ'),
-  password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
+  // Đã bỏ yêu cầu password trong schema
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -55,7 +55,11 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     try {
-      const result = await signIn(data.email, data.password);
+      // Khi không có password validation trong schema, password sẽ undefined trong data.
+      // Để giữ cũ, ta lấy value password từ form DOM nếu muốn, hoặc đặt mặc định rỗng.
+      const passwordInput = document.getElementById('password') as HTMLInputElement | null;
+      const password = passwordInput?.value ?? '';
+      const result = await signIn(data.email, password);
       if (result && result.requiresOtp) {
         setLoginEmail(data.email);
         setIsVerifying(true);
@@ -386,7 +390,7 @@ export default function LoginPage() {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
-                  {...register('password')}
+                  // Not registered in react-hook-form anymore
                 />
                 <button
                   type="button"
@@ -416,9 +420,7 @@ export default function LoginPage() {
                   Quên mật khẩu?
                 </button>
               </div>
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password.message}</p>
-              )}
+              {/* Không lỗi password khi không validate */}
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
