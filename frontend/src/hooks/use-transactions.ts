@@ -163,10 +163,13 @@ export function useCreateTransaction() {
       return mapBackendTransaction(res.data as BackendTransaction);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      // Transactions page phản ánh từ GET /transactions
+      queryClient.invalidateQueries({ queryKey: ['transactions'], exact: false });
       // Budgets GET computes `spentAmount` from transactions, so must refetch budgets too.
-      queryClient.invalidateQueries({ queryKey: ['budgets'] });
-      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['budgets'], exact: false });
+      // Dashboard & Reports lấy dữ liệu từ /reports/* (aggregate từ transactions)
+      queryClient.invalidateQueries({ queryKey: ['reports'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['stats'], exact: false });
       toast({
         title: 'Thành công',
         description: 'Giao dịch đã được thêm',
@@ -205,10 +208,11 @@ export function useUpdateTransaction() {
       return mapBackendTransaction(res.data as BackendTransaction);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'], exact: false });
       // Budgets GET computes `spentAmount` from transactions, so must refetch budgets too.
-      queryClient.invalidateQueries({ queryKey: ['budgets'] });
-      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['budgets'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['reports'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['stats'], exact: false });
       toast({
         title: 'Thành công',
         description: 'Giao dịch đã được cập nhật',
@@ -232,10 +236,11 @@ export function useDeleteTransaction() {
       await api.delete(`/transactions/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'], exact: false });
       // Budgets GET computes `spentAmount` from transactions, so must refetch budgets too.
-      queryClient.invalidateQueries({ queryKey: ['budgets'] });
-      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['budgets'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['reports'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['stats'], exact: false });
       toast({
         title: 'Thành công',
         description: 'Giao dịch đã được xóa',

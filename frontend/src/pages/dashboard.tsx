@@ -1,64 +1,45 @@
 import { useMemo } from 'react';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { ArrowUpRight, ArrowDownRight, Wallet, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useTransactions } from '@/hooks/use-transactions';
+import { mapBackendTransaction } from '@/hooks/use-transactions';
 import { useBudgets } from '@/hooks/use-budgets';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { useDashboardSummary, useExpenseByCategory } from '@/hooks/use-reports';
 
 export default function DashboardPage() {
   const currentMonth = format(new Date(), 'yyyy-MM');
-  const monthStart = format(startOfMonth(new Date()), 'yyyy-MM-dd');
-  const monthEnd = format(endOfMonth(new Date()), 'yyyy-MM-dd');
-
-  const { data: txData, isLoading } = useTransactions({
-    startDate: monthStart,
-    endDate: monthEnd,
-  });
-  const transactions = txData?.items ?? [];
 
   const { data: budgets = [] } = useBudgets(currentMonth);
 
+  const { data: summary, isLoading: summaryLoading } = useDashboardSummary();
+  const { data: expenseByCategoryBackend, isLoading: expenseLoading } = useExpenseByCategory();
+
+  const isLoading = summaryLoading || expenseLoading;
+
   const stats = useMemo(() => {
-    const income = transactions
-      .filter((t) => t.type === 'income')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-
-    const expense = transactions
-      .filter((t) => t.type === 'expense')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-
-    const balance = income - expense;
-
-    return { income, expense, balance };
-  }, [transactions]);
+    return {
+      income: summary?.totalIncome ?? 0,
+      expense: summary?.totalExpense ?? 0,
+      // Backend uses all-time balance (income - expense)
+      balance: summary?.currentBalance ?? 0,
+    };
+  }, [summary]);
 
   const expenseByCategory = useMemo(() => {
-    const categoryMap = new Map<string, { name: string; value: number; color: string }>();
-
-    transactions
-      .filter((t) => t.type === 'expense')
-      .forEach((t) => {
-        const cat = t.categories as any;
-        const existing = categoryMap.get(cat.id) || {
-          name: cat.name,
-          value: 0,
-          color: cat.color,
-        };
-        categoryMap.set(cat.id, {
-          ...existing,
-          value: existing.value + Number(t.amount),
-        });
-      });
-
-    return Array.from(categoryMap.values()).sort((a, b) => b.value - a.value);
-  }, [transactions]);
+    return (expenseByCategoryBackend ?? []).map((row) => ({
+      name: row.categoryName,
+      value: row.totalAmount,
+      color: row.categoryColor,
+    }));
+  }, [expenseByCategoryBackend]);
 
   const recentTransactions = useMemo(() => {
-    return transactions.slice(0, 5);
-  }, [transactions]);
+    const rows = summary?.recentTransactions ?? [];
+    return rows.slice(0, 5).map((r) => mapBackendTransaction(r));
+  }, [summary]);
 
   const budgetAlerts = useMemo(() => {
     return budgets
